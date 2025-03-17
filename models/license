@@ -1,0 +1,47 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class License extends Model
+{
+    use HasFactory;
+    
+    protected $fillable = ['license_key', 'plan_id', 'domain', 'is_active', 'expires_at'];
+    
+    public function plan()
+    {
+        return $this->belongsTo(Plan::class);
+    }
+    
+    public function usages()
+    {
+        return $this->hasMany(ApiUsage::class);
+    }
+    
+    // Verificar si la licencia está activa y no expirada
+    public function isValid()
+    {
+        return $this->is_active && 
+               ($this->expires_at === null || $this->expires_at > now());
+    }
+    
+    // Generar una clave de licencia única
+    public static function generateKey()
+    {
+        $key = strtoupper(substr(md5(uniqid(rand(), true)), 0, 8) . '-' . 
+               substr(md5(uniqid(rand(), true)), 0, 8) . '-' . 
+               substr(md5(uniqid(rand(), true)), 0, 8));
+               
+        // Verificar que la clave no exista ya
+        while (self::where('license_key', $key)->exists()) {
+            $key = strtoupper(substr(md5(uniqid(rand(), true)), 0, 8) . '-' . 
+                   substr(md5(uniqid(rand(), true)), 0, 8) . '-' . 
+                   substr(md5(uniqid(rand(), true)), 0, 8));
+        }
+        
+        return $key;
+    }
+}
